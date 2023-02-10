@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style lang="less" scoped>
+    body {
+      margin: 0 auto;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+    .container {
+      position: relative;
+      margin-top: 60px;
+    }
+    video {
+      width: 640px;
+      object-fit: contain;
+    }
+    #video-tool {
+      display: flex;
+    }
+    .bg-list {
+      display: flex;
+    }
+    .bg {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      cursor: pointer;
+      margin-right: 20px;
+    }
+    </style>
+</head>
+<body>
+  <button id="start" type="btn">开始</button>
+  <div class="container">
+    <video id="video" autoplay></video>
+    <canvas id="demo"></canvas>
+  </div>
+  <div class="bg-list">
+    <img class="bg" onclick="bgImg = this" id="bg1" src="./bgImgs/bg1.png"/>
+    <img class="bg" onclick="bgImg = this"id="bg2" src="./bgImgs/bg2.jpg"/>
+    <img class="bg" onclick="bgImg = this"id="bg3" src="./bgImgs/bg3.jpg"/>
+    <img class="bg" onclick="bgImg = this"id="bg4" src="./bgImgs/bg4.jpg"/>
+  </div>
+  
+  
+  <!-- 加载sdk -->
+  <script src="../../dist/humanSegGpu.js"></script>
+  
+<script>
+var imageCapture, bgImg
+async function load() {
+  await humanSegGpu.load('../../models/model.json')
+}
+load()
+
+window.onload = async function() {
+  const video = document.getElementById('video')
+  const canvas1 = document.getElementById('demo')
+  const startBtn = document.getElementById('start')
+
+  
+
+  // 点击视频控制按钮，实现视频播放/截图/暂停功能
+  startBtn.addEventListener('click', function (e) {
+    // 请求摄像头权限
+    navigator.getUserMedia(
+      { video: true },
+      function (stream) {
+        const track = stream.getVideoTracks()[0];
+        imageCapture = new ImageCapture(track);
+        step(imageCapture)
+        video.srcObject = canvas1.captureStream()
+        canvas1.style.display = 'none'
+      },
+      function (err) {
+        console.log(err)
+      },
+    )
+  })
+
+  function step(imageCapture) {
+    imageCapture.grabFrame().then(async imageBitmap => {
+      await humanSegGpu.drawHumanSeg(imageBitmap, canvas1, bgImg);
+      setTimeout(() => {step(imageCapture)}, 0)
+    })
+  }
+  
+  
+
+  
+  function drawCanvas(canvas, img) {
+    canvas.width = getComputedStyle(canvas).width.split('px')[0];
+    canvas.height = getComputedStyle(canvas).height.split('px')[0];
+    let ratio  = Math.min(canvas.width / img.width, canvas.height / img.height);
+    let x = (canvas.width - img.width * ratio) / 2;
+    let y = (canvas.height - img.height * ratio) / 2;
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height,
+        x, y, img.width * ratio, img.height * ratio);
+  }
+
+  
+}
+</script>
+</body>
+</html>
