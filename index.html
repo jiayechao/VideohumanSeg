@@ -45,6 +45,7 @@
     <canvas id="demo"></canvas>
   </div>
   <div class="bg-list">
+    <div class="bg" onclick="bgImg = null" style="line-height: 80px;background-color: #000;text-align: center;color: #fff;"  id="bg0">无背景</div>
     <img class="bg" onclick="bgImg = this" id="bg1" src="./bgImgs/bg1.png"/>
     <img class="bg" onclick="bgImg = this"id="bg2" src="./bgImgs/bg2.jpg"/>
     <img class="bg" onclick="bgImg = this"id="bg3" src="./bgImgs/bg3.jpg"/>
@@ -101,14 +102,17 @@ window.onload = async function() {
   })
 
   async function step(frame, controller) {
-    const width = frame.codedWidth
-    const height = frame.codedHeight
-    videoCanvas.width = width
-    videoCanvas.height = height
-    videoCanvasCtx.drawImage(frame, 0, 0, width, height)
-    await humanSegGpu.drawHumanSeg(videoCanvas, canvas1, bgImg)
-    const selfieFrame = new VideoFrame(canvas1, { timestamp: 1 })
-    controller.enqueue(selfieFrame)
+    let selfieFrame
+    if(bgImg) {
+      const width = frame.codedWidth
+      const height = frame.codedHeight
+      videoCanvas.width = width
+      videoCanvas.height = height
+      videoCanvasCtx.drawImage(frame, 0, 0, width, height)
+      await humanSegGpu.drawHumanSeg(videoCanvas, canvas1, bgImg)
+      selfieFrame = new VideoFrame(canvas1, { timestamp: 1 })
+    }
+    controller.enqueue(bgImg ? selfieFrame : frame)
     frame.close()
   }
   
