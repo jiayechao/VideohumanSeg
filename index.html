@@ -56,6 +56,7 @@
   <script src="/VideohumanSeg/dist/humanSegGpu.js"></script>
   
 <script>
+var bgImg
 async function load() {
   await humanSegGpu.load('/VideohumanSeg/models/model.json')
 }
@@ -105,7 +106,7 @@ window.onload = async function() {
     videoCanvas.width = width
     videoCanvas.height = height
     videoCanvasCtx.drawImage(frame, 0, 0, width, height)
-    await humanSegGpu.drawHumanSeg(videoCanvas, canvas1, background_canvas)
+    await humanSegGpu.drawHumanSeg(videoCanvas, canvas1, bgImg)
     const selfieFrame = new VideoFrame(canvas1, { timestamp: 1 })
     controller.enqueue(selfieFrame)
     frame.close()
