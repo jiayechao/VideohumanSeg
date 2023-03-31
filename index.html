@@ -102,7 +102,6 @@ window.onload = async function() {
   })
 
   async function step(frame, controller) {
-    let selfieFrame
     if(bgImg) {
       const width = frame.codedWidth
       const height = frame.codedHeight
@@ -110,9 +109,9 @@ window.onload = async function() {
       videoCanvas.height = height
       videoCanvasCtx.drawImage(frame, 0, 0, width, height)
       await humanSegGpu.drawHumanSeg(videoCanvas, canvas1, bgImg)
-      selfieFrame = new VideoFrame(canvas1, { timestamp: 1 })
     }
-    controller.enqueue(bgImg ? selfieFrame : frame)
+    const selfieFrame = new VideoFrame(bgImg ? canvas1 : frame, { timestamp: 1 })
+    controller.enqueue(selfieFrame)
     frame.close()
   }
   
