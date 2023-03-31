@@ -33,6 +33,9 @@
       cursor: pointer;
       margin-right: 20px;
     }
+    #demo {
+      display: none;
+    }
     </style>
 </head>
 <body>
@@ -53,7 +56,6 @@
   <script src="/VideohumanSeg/dist/humanSegGpu.js"></script>
   
 <script>
-var imageCapture, bgImg
 async function load() {
   await humanSegGpu.load('/VideohumanSeg/models/model.json')
 }
@@ -64,7 +66,8 @@ window.onload = async function() {
   const canvas1 = document.getElementById('demo')
   const startBtn = document.getElementById('start')
 
-  
+  const videoCanvas = document.createElement('canvas')
+  const videoCanvasCtx = videoCanvas.getContext('2d')
 
   // 点击视频控制按钮，实现视频播放/截图/暂停功能
   startBtn.addEventListener('click', function (e) {
@@ -72,11 +75,23 @@ window.onload = async function() {
     navigator.getUserMedia(
       { video: true },
       function (stream) {
-        const track = stream.getVideoTracks()[0];
-        imageCapture = new ImageCapture(track);
-        step(imageCapture)
-        video.srcObject = canvas1.captureStream()
-        canvas1.style.display = 'none'
+        let [track] = stream.getVideoTracks()
+          const segmentGenerator = new MediaStreamTrackGenerator({
+            kind: 'video',
+          })
+          const processor = new MediaStreamTrackProcessor({ track })
+          const segmentStream = new MediaStream([segmentGenerator])
+
+          video.srcObject = segmentStream
+
+          processor.readable
+            .pipeThrough(
+              new TransformStream({
+                transform: (frame, controller) => step(frame, controller),
+              }),
+            )
+            .pipeTo(segmentGenerator.writable)
+            .catch((err) => console.error('green screen generator error', err))
       },
       function (err) {
         console.log(err)
@@ -84,11 +99,16 @@ window.onload = async function() {
     )
   })
 
-  function step(imageCapture) {
-    imageCapture.grabFrame().then(async imageBitmap => {
-      await humanSegGpu.drawHumanSeg(imageBitmap, canvas1, bgImg);
-      setTimeout(() => {step(imageCapture)}, 0)
-    })
+  async function step(frame, controller) {
+    const width = frame.codedWidth
+    const height = frame.codedHeight
+    videoCanvas.width = width
+    videoCanvas.height = height
+    videoCanvasCtx.drawImage(frame, 0, 0, width, height)
+    await humanseg.drawHumanSeg(videoCanvas, canvas1, background_canvas)
+    const selfieFrame = new VideoFrame(canvas1, { timestamp: 1 })
+    controller.enqueue(selfieFrame)
+    frame.close()
   }
   
   
