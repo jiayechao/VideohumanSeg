@@ -72,7 +72,7 @@ const videoCanvasCtx = videoCanvas.getContext('2d')
 
 function changeBg(img) {
   bgImg = img
-  if(img) {
+  if(!img) {
     video.style.transform = 'scaleX(-1)'
   } else {
     video.style.transform = 'none'
