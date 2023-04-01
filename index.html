@@ -133,6 +133,7 @@ window.onload = async function() {
           videoCanvas.width,
           videoCanvas.height,
         )
+        if(bgImg) {
           // Only overwrite existing pixels.
           if (activeEffect === 'mask' || activeEffect === 'both') {
             videoCanvasCtx.globalCompositeOperation = 'source-in'
@@ -167,13 +168,14 @@ window.onload = async function() {
           videoCanvas.width,
           videoCanvas.height,
         )
+      }
 
         // videoCanvasCtx.restore()
         const selfieFrame = new VideoFrame(videoCanvas, { timestamp: 1 })
         controller.enqueue(selfieFrame)
         frame.close()
       })
-      await selfieSegmentation.send({ image: bgImg ? videoCanvas : frame })
+      await selfieSegmentation.send({ image: videoCanvas })
     }
 }
 </script>
