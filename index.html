@@ -18,6 +18,8 @@
     }
     video {
       width: 640px;
+      transform: scaleX(-1);
+      max-width: 100%;
       object-fit: contain;
     }
     #video-tool {
@@ -47,11 +49,11 @@
     <canvas id="demo"></canvas>
   </div>
   <div class="bg-list">
-    <div class="bg" onclick="changeBgNull(null)" style="line-height: 80px;background-color: #000;text-align: center;color: #fff;"  id="bg0">无背景</div>
-    <img class="bg" onclick="changeBgNull(this)" id="bg1" src="./bgImgs/bg1.png"/>
-    <img class="bg" onclick="changeBgNull(this)"id="bg2" src="./bgImgs/bg2.jpg"/>
-    <img class="bg" onclick="changeBgNull(this)"id="bg3" src="./bgImgs/bg3.jpg"/>
-    <img class="bg" onclick="changeBgNull(this)"id="bg4" src="./bgImgs/bg4.jpg"/>
+    <div class="bg" onclick="changeBg(null)" style="line-height: 80px;background-color: #000;text-align: center;color: #fff;"  id="bg0">无背景</div>
+    <img class="bg" onclick="changeBg(this)" id="bg1" src="./bgImgs/bg1.png"/>
+    <img class="bg" onclick="changeBg(this)"id="bg2" src="./bgImgs/bg2.jpg"/>
+    <img class="bg" onclick="changeBg(this)"id="bg3" src="./bgImgs/bg3.jpg"/>
+    <img class="bg" onclick="changeBg(this)"id="bg4" src="./bgImgs/bg4.jpg"/>
   </div>
   
   
@@ -68,7 +70,8 @@ const startBtn = document.getElementById('start')
 const videoCanvas = document.createElement('canvas')
 const videoCanvasCtx = videoCanvas.getContext('2d')
 
-function changeBgNull(img) {
+function changeBg(img) {
+  bgImg = img
   if(img) {
     video.style.transform = 'scaleX(-1)'
   } else {
