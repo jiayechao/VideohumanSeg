@@ -40,6 +40,7 @@
 </head>
 <body>
   <button id="start" type="btn">开始</button>
+  <button  type="btn" onclick="activeEffect = 'mask'">替换人像</button>
   <div class="container">
     <video id="video" autoplay></video>
     <canvas id="demo"></canvas>
@@ -54,14 +55,11 @@
   
   
   <!-- 加载sdk -->
-  <script src="/VideohumanSeg/dist/humanSegGpu.js"></script>
+  <script src="/VideohumanSeg/selfie_segmentation/selfie_segmentation.js"></script>
   
 <script>
 var bgImg
-async function load() {
-  await humanSegGpu.load('/VideohumanSeg/models/model.json')
-}
-load()
+var activeEffect = 'environment'
 
 window.onload = async function() {
   const video = document.getElementById('video')
@@ -70,6 +68,20 @@ window.onload = async function() {
 
   const videoCanvas = document.createElement('canvas')
   const videoCanvasCtx = videoCanvas.getContext('2d')
+
+  
+
+  const selfieSegmentation = new SelfieSegmentation({
+    locateFile: (file) => {
+      return `/VideohumanSeg/selfie_segmentation/${file}`
+    },
+  })
+
+  selfieSegmentation.setOptions({
+    selfieMode: true,
+    modelSelection: 1,
+    effect: 'mask',
+  })
 
   // 点击视频控制按钮，实现视频播放/截图/暂停功能
   startBtn.addEventListener('click', function (e) {
@@ -108,28 +120,67 @@ window.onload = async function() {
       videoCanvas.width = width
       videoCanvas.height = height
       videoCanvasCtx.drawImage(frame, 0, 0, width, height)
-      await humanSegGpu.drawHumanSeg(videoCanvas, canvas1, bgImg)
+    
+
+      await selfieSegmentation.onResults(async (results) => {
+        videoCanvasCtx.save()
+        videoCanvasCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height)
+        videoCanvasCtx.drawImage(
+          results.segmentationMask,
+          0,
+          0,
+          videoCanvas.width,
+          videoCanvas.height,
+        )
+
+        // Only overwrite existing pixels.
+        if (activeEffect === 'mask' || activeEffect === 'both') {
+          videoCanvasCtx.globalCompositeOperation = 'source-in'
+          // This can be a color or a texture or whatever...
+          // videoCanvasCtx.fillStyle = '#00FF00'
+          // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
+          videoCanvasCtx.drawImage(
+            background_canvas,
+            0,
+            0,
+            videoCanvas.width,
+            videoCanvas.height,
+          )
+        } else {
+          videoCanvasCtx.globalCompositeOperation = 'source-out'
+          // videoCanvasCtx.fillStyle = '#0000FF'
+          // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
+          videoCanvasCtx.drawImage(
+            background_canvas,
+            0,
+            0,
+            videoCanvas.width,
+            videoCanvas.height,
+          )
+        }
+
+        // Only overwrite missing pixels.
+        videoCanvasCtx.globalCompositeOperation = 'destination-atop'
+        videoCanvasCtx.drawImage(
+          results.image,
+          0,
+          0,
+          videoCanvas.width,
+          videoCanvas.height,
+        )
+
+        // videoCanvasCtx.restore()
+        const selfieFrame = new VideoFrame(videoCanvas, { timestamp: 1 })
+        controller.enqueue(selfieFrame)
+        frame.close()
+      })
+      await selfieSegmentation.send({ image: videoCanvas })
+    } else {
+        const selfieFrame = new VideoFrame(frame, { timestamp: 1 })
+        controller.enqueue(selfieFrame)
+        frame.close()
+      }
     }
-    const selfieFrame = new VideoFrame(bgImg ? canvas1 : frame, { timestamp: 1 })
-    controller.enqueue(selfieFrame)
-    frame.close()
-  }
-  
-  
-
-  
-  function drawCanvas(canvas, img) {
-    canvas.width = getComputedStyle(canvas).width.split('px')[0];
-    canvas.height = getComputedStyle(canvas).height.split('px')[0];
-    let ratio  = Math.min(canvas.width / img.width, canvas.height / img.height);
-    let x = (canvas.width - img.width * ratio) / 2;
-    let y = (canvas.height - img.height * ratio) / 2;
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-    canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height,
-        x, y, img.width * ratio, img.height * ratio);
-  }
-
-  
 }
 </script>
 </body>
