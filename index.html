@@ -133,7 +133,6 @@ window.onload = async function() {
           videoCanvas.width,
           videoCanvas.height,
         )
-        if(bgImg) {
           // Only overwrite existing pixels.
           if (activeEffect === 'mask' || activeEffect === 'both') {
             videoCanvasCtx.globalCompositeOperation = 'source-in'
@@ -159,7 +158,6 @@ window.onload = async function() {
               videoCanvas.height,
             )
           }
-        }
         // Only overwrite missing pixels.
         videoCanvasCtx.globalCompositeOperation = 'destination-atop'
         videoCanvasCtx.drawImage(
@@ -175,7 +173,7 @@ window.onload = async function() {
         controller.enqueue(selfieFrame)
         frame.close()
       })
-      await selfieSegmentation.send({ image: videoCanvas })
+      await selfieSegmentation.send({ image: bgImg ? videoCanvas : frame })
     }
 }
 </script>
