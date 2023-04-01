@@ -24,7 +24,7 @@
       display: flex;
     }
     .bg-list {
-      display: flex;
+      display: inline-flex;
     }
     .bg {
       width: 80px;
@@ -47,11 +47,11 @@
     <canvas id="demo"></canvas>
   </div>
   <div class="bg-list">
-    <div class="bg" onclick="bgImg = null" style="line-height: 80px;background-color: #000;text-align: center;color: #fff;"  id="bg0">无背景</div>
-    <img class="bg" onclick="bgImg = this" id="bg1" src="./bgImgs/bg1.png"/>
-    <img class="bg" onclick="bgImg = this"id="bg2" src="./bgImgs/bg2.jpg"/>
-    <img class="bg" onclick="bgImg = this"id="bg3" src="./bgImgs/bg3.jpg"/>
-    <img class="bg" onclick="bgImg = this"id="bg4" src="./bgImgs/bg4.jpg"/>
+    <div class="bg" onclick="changeBgNull(null)" style="line-height: 80px;background-color: #000;text-align: center;color: #fff;"  id="bg0">无背景</div>
+    <img class="bg" onclick="changeBgNull(this)" id="bg1" src="./bgImgs/bg1.png"/>
+    <img class="bg" onclick="changeBgNull(this)"id="bg2" src="./bgImgs/bg2.jpg"/>
+    <img class="bg" onclick="changeBgNull(this)"id="bg3" src="./bgImgs/bg3.jpg"/>
+    <img class="bg" onclick="changeBgNull(this)"id="bg4" src="./bgImgs/bg4.jpg"/>
   </div>
   
   
@@ -61,14 +61,23 @@
 <script>
 var bgImg
 var activeEffect = 'environment'
+const video = document.getElementById('video')
+const canvas1 = document.getElementById('demo')
+const startBtn = document.getElementById('start')
 
-window.onload = async function() {
-  const video = document.getElementById('video')
-  const canvas1 = document.getElementById('demo')
-  const startBtn = document.getElementById('start')
+const videoCanvas = document.createElement('canvas')
+const videoCanvasCtx = videoCanvas.getContext('2d')
 
-  const videoCanvas = document.createElement('canvas')
-  const videoCanvasCtx = videoCanvas.getContext('2d')
+function changeBgNull(img) {
+  if(img) {
+    video.style.transform = 'scaleX(-1)'
+  } else {
+    video.style.transform = 'none'
+  }
+}
+
+
+  
 
   
 
@@ -115,7 +124,7 @@ window.onload = async function() {
   })
 
   async function step(frame, controller) {
-    
+    if(bgImg) {
       const width = frame.codedWidth
       const height = frame.codedHeight
       videoCanvas.width = width
@@ -133,7 +142,6 @@ window.onload = async function() {
           videoCanvas.width,
           videoCanvas.height,
         )
-        if(bgImg) {
           // Only overwrite existing pixels.
           if (activeEffect === 'mask' || activeEffect === 'both') {
             videoCanvasCtx.globalCompositeOperation = 'source-in'
@@ -168,7 +176,6 @@ window.onload = async function() {
           videoCanvas.width,
           videoCanvas.height,
         )
-      }
 
         // videoCanvasCtx.restore()
         const selfieFrame = new VideoFrame(videoCanvas, { timestamp: 1 })
@@ -176,8 +183,12 @@ window.onload = async function() {
         frame.close()
       })
       await selfieSegmentation.send({ image: videoCanvas })
+    } else {
+      const selfieFrame = new VideoFrame(frame, { timestamp: 1 })
+      controller.enqueue(selfieFrame)
+      frame.close()
     }
-}
+  }
 </script>
 </body>
 </html>
