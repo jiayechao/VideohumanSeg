@@ -41,6 +41,7 @@
 <body>
   <button id="start" type="btn">开始</button>
   <button  type="btn" onclick="activeEffect = 'mask'">替换人像</button>
+  <button  type="btn" onclick="activeEffect = 'environment'">替换背景</button>
   <div class="container">
     <video id="video" autoplay></video>
     <canvas id="demo"></canvas>
@@ -114,7 +115,7 @@ window.onload = async function() {
   })
 
   async function step(frame, controller) {
-    if(bgImg) {
+    
       const width = frame.codedWidth
       const height = frame.codedHeight
       videoCanvas.width = width
@@ -132,33 +133,33 @@ window.onload = async function() {
           videoCanvas.width,
           videoCanvas.height,
         )
-
-        // Only overwrite existing pixels.
-        if (activeEffect === 'mask' || activeEffect === 'both') {
-          videoCanvasCtx.globalCompositeOperation = 'source-in'
-          // This can be a color or a texture or whatever...
-          // videoCanvasCtx.fillStyle = '#00FF00'
-          // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
-          videoCanvasCtx.drawImage(
-            bgImg,
-            0,
-            0,
-            videoCanvas.width,
-            videoCanvas.height,
-          )
-        } else {
-          videoCanvasCtx.globalCompositeOperation = 'source-out'
-          // videoCanvasCtx.fillStyle = '#0000FF'
-          // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
-          videoCanvasCtx.drawImage(
-            bgImg,
-            0,
-            0,
-            videoCanvas.width,
-            videoCanvas.height,
-          )
+        if(bgImg) {
+          // Only overwrite existing pixels.
+          if (activeEffect === 'mask' || activeEffect === 'both') {
+            videoCanvasCtx.globalCompositeOperation = 'source-in'
+            // This can be a color or a texture or whatever...
+            // videoCanvasCtx.fillStyle = '#00FF00'
+            // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
+            videoCanvasCtx.drawImage(
+              bgImg,
+              0,
+              0,
+              videoCanvas.width,
+              videoCanvas.height,
+            )
+          } else {
+            videoCanvasCtx.globalCompositeOperation = 'source-out'
+            // videoCanvasCtx.fillStyle = '#0000FF'
+            // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
+            videoCanvasCtx.drawImage(
+              bgImg,
+              0,
+              0,
+              videoCanvas.width,
+              videoCanvas.height,
+            )
+          }
         }
-
         // Only overwrite missing pixels.
         videoCanvasCtx.globalCompositeOperation = 'destination-atop'
         videoCanvasCtx.drawImage(
@@ -175,11 +176,6 @@ window.onload = async function() {
         frame.close()
       })
       await selfieSegmentation.send({ image: videoCanvas })
-    } else {
-        const selfieFrame = new VideoFrame(frame, { timestamp: 1 })
-        controller.enqueue(selfieFrame)
-        frame.close()
-      }
     }
 }
 </script>
