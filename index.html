@@ -16,6 +16,17 @@
       position: relative;
       margin-top: 60px;
     }
+    #loading {
+      display: none;
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      top: 0;
+      width: 640px;
+      text-align: center;
+      line-height: 240px;
+      font-size: 60px;
+    }
     video {
       width: 640px;
       transform: scaleX(-1);
@@ -46,6 +57,7 @@
   <button  type="btn" onclick="activeEffect = 'environment'">替换背景</button>
   <div class="container">
     <video id="video" autoplay></video>
+    <div id="loading">加载中</div>
     <canvas id="demo"></canvas>
   </div>
   <div class="bg-list">
@@ -58,14 +70,18 @@
   
   
   <!-- 加载sdk -->
-  <script src="/VideohumanSeg/selfie_segmentation/selfie_segmentation.js"></script>
+  <script src="/selfie_segmentation/selfie_segmentation.js"></script>
   
 <script>
 var bgImg
 var activeEffect = 'environment'
+
+const getUserMedia =  navigator.getUserMedia ||  navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.mzGetUserMedia
+
 const video = document.getElementById('video')
 const canvas1 = document.getElementById('demo')
 const startBtn = document.getElementById('start')
+const loading = document.getElementById('loading')
 
 const videoCanvas = document.createElement('canvas')
 const videoCanvasCtx = videoCanvas.getContext('2d')
@@ -79,25 +95,21 @@ function changeBg(img) {
   }
 }
 
-
-  
-
-  
-
   const selfieSegmentation = new SelfieSegmentation({
     locateFile: (file) => {
-      return `/VideohumanSeg/selfie_segmentation/${file}`
+      return `/selfie_segmentation/${file}`
     },
   })
 
   selfieSegmentation.setOptions({
     selfieMode: true,
-    modelSelection: 1,
+    modelSelection: 0,
     effect: 'mask',
   })
 
   // 点击视频控制按钮，实现视频播放/截图/暂停功能
   startBtn.addEventListener('click', function (e) {
+    loading.style.display = 'block'
     // 请求摄像头权限
     navigator.getUserMedia(
       { video: true },
@@ -127,7 +139,6 @@ function changeBg(img) {
   })
 
   async function step(frame, controller) {
-    if(bgImg) {
       const width = frame.codedWidth
       const height = frame.codedHeight
       videoCanvas.width = width
@@ -145,6 +156,7 @@ function changeBg(img) {
           videoCanvas.width,
           videoCanvas.height,
         )
+        if(bgImg) {
           // Only overwrite existing pixels.
           if (activeEffect === 'mask' || activeEffect === 'both') {
             videoCanvasCtx.globalCompositeOperation = 'source-in'
@@ -170,6 +182,7 @@ function changeBg(img) {
               videoCanvas.height,
             )
           }
+        }
         // Only overwrite missing pixels.
         videoCanvasCtx.globalCompositeOperation = 'destination-atop'
         videoCanvasCtx.drawImage(
@@ -180,17 +193,24 @@ function changeBg(img) {
           videoCanvas.height,
         )
 
+        // var a = document.createElement('canvas')
+        // var b = a.getContext('2d')
+        // document.body.append(a)
+        // b.drawImage(
+        //   results.image,
+        //   0,
+        //   0,
+        //   videoCanvas.width,
+        //   videoCanvas.height,
+        // )
+
         // videoCanvasCtx.restore()
         const selfieFrame = new VideoFrame(videoCanvas, { timestamp: 1 })
         controller.enqueue(selfieFrame)
         frame.close()
+        loading.style.display = 'none'
       })
       await selfieSegmentation.send({ image: videoCanvas })
-    } else {
-      const selfieFrame = new VideoFrame(frame, { timestamp: 1 })
-      controller.enqueue(selfieFrame)
-      frame.close()
-    }
   }
 </script>
 </body>
