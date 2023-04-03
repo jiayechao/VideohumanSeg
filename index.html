@@ -70,7 +70,7 @@
   
   
   <!-- 加载sdk -->
-  <script src="/selfie_segmentation/selfie_segmentation.js"></script>
+  <script src="/VideohumanSeg/selfie_segmentation/selfie_segmentation.js"></script>
   
 <script>
 var bgImg
@@ -97,7 +97,7 @@ function changeBg(img) {
 
   const selfieSegmentation = new SelfieSegmentation({
     locateFile: (file) => {
-      return `/selfie_segmentation/${file}`
+      return `/VideohumanSeg/selfie_segmentation/${file}`
     },
   })
 
