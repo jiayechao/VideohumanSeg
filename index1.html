@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <video id="video" autoplay></video>
+  <canvas id="canvas"></canvas>
+  <script type="module">
+    import vision from "https://cdn.skypack.dev/@mediapipe/tasks-vision";
+    var runningMode = "IMAGE";
+    var imageSegmenter
+    const canvasElement = document.getElementById("canvas");
+    const video = document.getElementById("video");
+    const canvasCtx = canvasElement.getContext('2d');
+    const { ImageSegmenter, SegmentationMask, FilesetResolver } = vision;
+
+    async function createImageSegmenter() {
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      );
+
+      imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            "https://storage.googleapis.com/mediapipe-assets/deeplabv3.tflite?generation=1661875711618421"
+        },
+        runningMode: runningMode
+      });
+    }
+    
+
+    async function renderLoop() {
+      let startTimeMs = performance.now();
+
+      imageSegmenter.segmentForVideo(video, startTimeMs, () => {
+
+      });
+
+      requestAnimationFrame(() => {
+        renderLoop();
+      });
+    }
+
+    // createImageSegmenter().then(res =>{renderLoop()} )
+
+async function predictWebcam() {
+  canvasCtx.save();
+  canvasCtx.clearRect(0, 0, video.videoWidth, video.videoHeight);
+  canvasCtx.drawImage(
+    video, 0, 0, video.videoWidth, video.videoHeight);
+  // Do not segmented if imageSegmenter hasn't loaded
+  if (imageSegmenter === undefined) {
+    return;
+  }
+  // if image mode is initialized, create a new segmented with video runningMode
+  if (runningMode === "IMAGE") {
+    runningMode = "VIDEO";
+    await imageSegmenter.setOptions({ runningMode: runningMode });
+  }
+  let startTimeMs = performance.now();
+  
+  // Start segmenting the stream.
+  imageSegmenter.segmentForVideo(video, startTimeMs, () => {});
+}
+video.srcObject = await navigator.mediaDevices.getUserMedia({video: true});
+video.addEventListener("loadeddata", predictWebcam);
+window.requestAnimationFrame(predictWebcam)
+  </script>
+</body>
+</html>
