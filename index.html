@@ -75,7 +75,10 @@
 var bgImg
 var activeEffect = 'environment'
 
-const getUserMedia =  navigator.getUserMedia ||  navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.mzGetUserMedia
+function hasGetUserMedia() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+
 
 const video = document.getElementById('video')
 const canvas1 = document.getElementById('demo')
@@ -102,35 +105,35 @@ function changeBg(img) {
   })
 
   // 点击视频控制按钮，实现视频播放/截图/暂停功能
-  startBtn.addEventListener('click', function (e) {
+  startBtn.addEventListener('click', async function (e) {
+    if (!hasGetUserMedia()) {
+      alert("getUserMedia() is not supported by your browser");
+      return
+    }
+
     loading.style.display = 'block'
     // 请求摄像头权限
-    navigator.getUserMedia(
-      { audio: true, video: true },
-      function (stream) {
-        let [videoTrack] = stream.getVideoTracks()
-        let [audioTrack] = stream.getAudioTracks()
-          const segmentGenerator = new MediaStreamTrackGenerator({
-            kind: 'video',
-          })
-          const processor = new MediaStreamTrackProcessor({ track: videoTrack })
-          const segmentStream = new MediaStream([audioTrack, segmentGenerator ]) // segmentGenerator
-          console.log(videoTrack)
-          video.srcObject = segmentStream
-
-          processor.readable
-            .pipeThrough(
-              new TransformStream({
-                transform: (frame, controller) => step(frame, controller),
-              }),
-            )
-            .pipeTo(segmentGenerator.writable)
-            .catch((err) => console.error('green screen generator error', err))
-      },
-      function (err) {
-        console.log(err)
-      },
+    const stream = await navigator.mediaDevices.getUserMedia(
+      { audio: true, video: true }
     )
+    let [videoTrack] = stream.getVideoTracks()
+    let [audioTrack] = stream.getAudioTracks()
+    const segmentGenerator = new MediaStreamTrackGenerator({
+      kind: 'video',
+    })
+    const processor = new MediaStreamTrackProcessor({ track: videoTrack })
+    const segmentStream = new MediaStream([audioTrack, segmentGenerator ]) // segmentGenerator
+    console.log(videoTrack)
+    video.srcObject = segmentStream
+
+    processor.readable
+      .pipeThrough(
+        new TransformStream({
+          transform: (frame, controller) => step(frame, controller),
+        }),
+      )
+      .pipeTo(segmentGenerator.writable)
+      .catch((err) => console.error('green screen generator error', err))
   })
 
   async function step(frame, controller) {
@@ -196,6 +199,9 @@ function changeBg(img) {
       })
       await selfieSegmentation.send({ image: videoCanvas })
   }
+
+
+
 </script>
 </body>
 </html>

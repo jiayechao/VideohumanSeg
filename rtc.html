@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>浏览器本地同页面模拟点对点连接（无信令服务版）</title>
+    <style>
+      video {
+        width: 300px;
+        height: 250px;
+      }
+    </style>
+  </head>
+  <body>
+    我的本地视频：<video id="local" autoplay></video> 远程连接拿到我的本地视频<video
+      id="local-from-remote"
+      autoplay
+    ></video>
+
+    <script>
+      let localStream
+
+const createLocalMediaStream = async () => {
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: false,
+  })
+  document.getElementById('local').srcObject = localStream
+}
+
+const createPeerConnection = async () => {
+  const peerA = new RTCPeerConnection()
+  const peerB = new RTCPeerConnection()
+
+  // 添加本地媒体流
+  localStream.getTracks().forEach((track) => {
+    peerA.addTrack(track, localStream)
+  })
+
+  // 监听 ice 候选项事件
+  peerA.onicecandidate = (event) => {
+    if (event.candidate) {
+      peerB.addIceCandidate(event.candidate) // 设置 ice 候选项
+    }
+  }
+
+  // 监听获取媒体数据（前提是peerA已添加了媒体流数据）
+  peerB.ontrack = (event) => {
+    document.getElementById('local-from-remote').srcObject = event.streams[0]
+  }
+  /**
+   * 媒体协商（交换SDP）
+   */
+  const offer = await peerA.createOffer()
+  await peerA.setLocalDescription(offer)
+
+  await peerB.setRemoteDescription(offer)
+  const answer = await peerB.createAnswer()
+  await peerB.setLocalDescription(answer)
+
+  await peerA.setRemoteDescription(answer)
+}
+
+const main = async () => {
+  await createLocalMediaStream()
+  await createPeerConnection()
+}
+main()
+    </script>
+  </body>
+</html>
