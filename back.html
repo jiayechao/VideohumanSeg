@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style lang="less" scoped>
+    body {
+      margin: 0 auto;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+    .container {
+      position: relative;
+      margin-top: 60px;
+    }
+    #loading {
+      display: none;
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      top: 0;
+      width: 640px;
+      text-align: center;
+      line-height: 240px;
+      font-size: 60px;
+    }
+    video {
+      width: 640px;
+      max-width: 100%;
+      object-fit: contain;
+    }
+    #video-tool {
+      display: flex;
+    }
+    .bg-list {
+      display: inline-flex;
+    }
+    .bg {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      cursor: pointer;
+      margin-right: 20px;
+    }
+    #demo {
+      display: none;
+    }
+    </style>
+</head>
+<body>
+  <button id="start" type="btn">开始</button>
+  <button  type="btn" onclick="activeEffect = 'mask'">替换人像</button>
+  <button  type="btn" onclick="activeEffect = 'environment'">替换背景</button>
+  <div class="container">
+    <video id="video" autoplay controls></video>
+    <div id="loading">加载中</div>
+    <canvas id="demo"></canvas>
+  </div>
+  <div class="bg-list">
+    <div class="bg" onclick="changeBg(null)" style="line-height: 80px;background-color: #000;text-align: center;color: #fff;"  id="bg0">无背景</div>
+    <img class="bg" onclick="changeBg(this)" id="bg1" src="./bgImgs/bg1.png"/>
+    <img class="bg" onclick="changeBg(this)"id="bg2" src="./bgImgs/bg2.jpg"/>
+    <img class="bg" onclick="changeBg(this)"id="bg3" src="./bgImgs/bg3.jpg"/>
+    <img class="bg" onclick="changeBg(this)"id="bg4" src="./bgImgs/bg4.jpg"/>
+  </div>
+  
+  
+  <!-- 加载sdk -->
+  <script src="/selfie_segmentation/selfie_segmentation.js"></script>
+  
+<script>
+var bgImg
+var activeEffect = 'environment'
+
+function hasGetUserMedia() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+
+
+const video = document.getElementById('video')
+const canvas1 = document.getElementById('demo')
+const startBtn = document.getElementById('start')
+const loading = document.getElementById('loading')
+
+const videoCanvas = document.createElement('canvas')
+const videoCanvasCtx = videoCanvas.getContext('2d')
+
+function changeBg(img) {
+  bgImg = img
+}
+
+  const selfieSegmentation = new SelfieSegmentation({
+    locateFile: (file) => {
+      return `/selfie_segmentation/${file}`
+    },
+  })
+
+  selfieSegmentation.setOptions({
+    selfieMode: true,
+    modelSelection: 0,
+    effect: 'mask',
+  })
+
+  // 点击视频控制按钮，实现视频播放/截图/暂停功能
+  startBtn.addEventListener('click', async function (e) {
+    if (!hasGetUserMedia()) {
+      alert("getUserMedia() is not supported by your browser");
+      return
+    }
+
+    loading.style.display = 'block'
+    // 请求摄像头权限
+    const stream = await navigator.mediaDevices.getUserMedia(
+      { audio: true, video: true }
+    )
+    let [videoTrack] = stream.getVideoTracks()
+    let [audioTrack] = stream.getAudioTracks()
+    const segmentGenerator = new MediaStreamTrackGenerator({
+      kind: 'video',
+    })
+    const processor = new MediaStreamTrackProcessor({ track: videoTrack })
+    const segmentStream = new MediaStream([audioTrack, segmentGenerator ]) // segmentGenerator
+    console.log(videoTrack)
+    video.srcObject = segmentStream
+
+    processor.readable
+      .pipeThrough(
+        new TransformStream({
+          transform: (frame, controller) => step(frame, controller),
+        }),
+      )
+      .pipeTo(segmentGenerator.writable)
+      .catch((err) => console.error('green screen generator error', err))
+  })
+
+  async function step(frame, controller) {
+      const width = frame.codedWidth
+      const height = frame.codedHeight
+      videoCanvas.width = width
+      videoCanvas.height = height
+      videoCanvasCtx.drawImage(frame, 0, 0, width, height)
+    
+
+      await selfieSegmentation.onResults(async (results) => {
+        videoCanvasCtx.save()
+        videoCanvasCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height)
+        videoCanvasCtx.drawImage(
+          results.segmentationMask,
+          0,
+          0,
+          videoCanvas.width,
+          videoCanvas.height,
+        )
+        if(bgImg) {
+          // Only overwrite existing pixels.
+          if (activeEffect === 'mask' || activeEffect === 'both') {
+            videoCanvasCtx.globalCompositeOperation = 'source-in'
+            // This can be a color or a texture or whatever...
+            // videoCanvasCtx.fillStyle = '#00FF00'
+            // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
+            videoCanvasCtx.drawImage(
+              bgImg,
+              0,
+              0,
+              videoCanvas.width,
+              videoCanvas.height,
+            )
+          } else {
+            videoCanvasCtx.globalCompositeOperation = 'source-out'
+            // videoCanvasCtx.fillStyle = '#0000FF'
+            // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
+            videoCanvasCtx.drawImage(
+              bgImg,
+              0,
+              0,
+              videoCanvas.width,
+              videoCanvas.height,
+            )
+          }
+        }
+        // Only overwrite missing pixels.
+        videoCanvasCtx.globalCompositeOperation = 'destination-atop'
+        videoCanvasCtx.drawImage(
+          results.image,
+          0,
+          0,
+          videoCanvas.width,
+          videoCanvas.height,
+        )
+
+        // videoCanvasCtx.restore()
+        const selfieFrame = new VideoFrame(bgImg ? videoCanvas : results.image, { timestamp: 1 })
+        controller.enqueue(selfieFrame)
+        frame.close()
+        loading.style.display = 'none'
+      })
+      await selfieSegmentation.send({ image: videoCanvas })
+  }
+
+
+
+</script>
+</body>
+</html>

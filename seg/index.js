@@ -15,49 +15,69 @@
 import vision from "./assets/vision_bundle.mjs";
 const { ImageSegmenter, SegmentationMask, FilesetResolver } = vision;
 
-console.log(ImageSegmenter)
 
 // Get DOM elements
 const video = document.getElementById("webcam")
-const video1 = document.getElementById("webcam1")
-
+const bg = document.getElementsByClassName('bg')[0]
 const canvasElement = document.getElementById("canvas")
-const canvasCtx = canvasElement.getContext("2d");
-const webcamPredictions = document.getElementById("webcamPredictions");
-const demosSection = document.getElementById("demos");
+const canvasCtx = canvasElement.getContext("2d")
+const canvasElement1 = document.getElementById("canvas1")
+const canvasCtx1 = canvasElement1.getContext("2d");
 let enableWebcamButton
 let webcamRunning = false;
-const videoHeight = "360px";
-const videoWidth = "480px";
-let runningMode = "IMAGE"; // "IMAGE" | "VIDEO" 
-const resultWidthHeigth = 256;
+let runningMode = "VIDEO"; // "IMAGE" | "VIDEO" 
+let width = 640, height = 480
 
-let imageSegmenter;
-let labels
+let imageSegmenter, legendColors;
 
-const legendColors = [
-  [255, 197, 0, 255], // Vivid Yellow
-  [128, 62, 117, 255], // Strong Purple
-  [255, 104, 0, 255], // Vivid Orange
-  [166, 189, 215, 255], // Very Light Blue
-  [193, 0, 32, 255], // Vivid Red
-  [206, 162, 98, 255], // Grayish Yellow
-  [129, 112, 102, 255], // Medium Gray
-  [0, 125, 52, 255], // Vivid Green
-  [246, 118, 142, 255], // Strong Purplish Pink
-  [0, 83, 138, 255], // Strong Blue
-  [255, 112, 92, 255], // Strong Yellowish Pink
-  [83, 55, 112, 255], // Strong Violet
-  [255, 142, 0, 255], // Vivid Orange Yellow
-  [179, 40, 81, 255], // Strong Purplish Red
-  [244, 200, 0, 255], // Vivid Greenish Yellow
-  [127, 24, 13, 255], // Strong Reddish Brown
-  [147, 170, 0, 255], // Vivid Yellowish Green
-  [89, 51, 21, 255], // Deep Yellowish Brown
-  [241, 58, 19, 255], // Vivid Reddish Orange
-  [35, 44, 22, 255], // Dark Olive Green
-  [0, 161, 194, 255] // Vivid Blue
-];
+
+function createBgData() {
+  const videoCanvas = document.createElement('canvas')
+  const videoCanvasCtx = videoCanvas.getContext('2d')
+  videoCanvas.width = width
+  videoCanvas.height = height
+  console.log(bg.clientWidth)
+  videoCanvasCtx.drawImage(bg, 0, 0, bg.clientWidth,
+    bg.clientHeight,
+    0,
+    0,
+    width, 
+    height)
+  legendColors = videoCanvasCtx.getImageData(
+    0,
+    0,
+    width,
+    height 
+  ).data;
+}
+
+createBgData()
+
+
+// legendColors = [
+//   [255, 197, 0, 255], // Vivid Yellow
+//   [128, 62, 117, 255], // Strong Purple
+//   [255, 104, 0, 255], // Vivid Orange
+//   [166, 189, 215, 255], // Very Light Blue
+//   [193, 0, 32, 255], // Vivid Red
+//   [206, 162, 98, 255], // Grayish Yellow
+//   [129, 112, 102, 255], // Medium Gray
+//   [0, 125, 52, 255], // Vivid Green
+//   [246, 118, 142, 255], // Strong Purplish Pink
+//   [0, 83, 138, 255], // Strong Blue
+//   [255, 112, 92, 255], // Strong Yellowish Pink
+//   [83, 55, 112, 255], // Strong Violet
+//   [255, 142, 0, 255], // Vivid Orange Yellow
+//   [179, 40, 81, 255], // Strong Purplish Red
+//   [244, 200, 0, 255], // Vivid Greenish Yellow
+//   [127, 24, 13, 255], // Strong Reddish Brown
+//   [147, 170, 0, 255], // Vivid Yellowish Green
+//   [89, 51, 21, 255], // Deep Yellowish Brown
+//   [241, 58, 19, 255], // Vivid Reddish Orange
+//   [35, 44, 22, 255], // Dark Olive Green
+//   [0, 161, 194, 255], // Vivid Blue
+//   [0, 161, 194, 255]
+// ];
 
 const createImageSegmenter = async () => {
   const audio = await FilesetResolver.forVisionTasks(
@@ -74,95 +94,41 @@ const createImageSegmenter = async () => {
     outputCategoryMask: true,
     outputConfidenceMasks: false
   });
-  labels = imageSegmenter.getLabels();
-  demosSection.classList.remove("invisible");
 };
 createImageSegmenter();
 
-const imageContainers = document.getElementsByClassName(
-  "segmentOnClick"
-);
-
-// Add click event listeners for the img elements.
-for (let i = 0; i < imageContainers.length; i++) {
-  imageContainers[i]
-    .getElementsByTagName("img")[0]
-    .addEventListener("click", handleClick);
-}
-
-/**
- * Demo 1: Segmented images on click and display results.
- */
-let canvasClick;
-async function handleClick(event) {
-  // Do not segmented if imageSegmenter hasn't loaded
-  if (imageSegmenter === undefined) {
-    return;
-  }
-  canvasClick = event.target.parentElement.getElementsByTagName("canvas")[0];
-  canvasClick.classList.remove("removed");
-  canvasClick.width = event.target.naturalWidth;
-  canvasClick.height = event.target.naturalHeight;
-  const cxt = canvasClick.getContext("2d");
-  cxt.clearRect(0, 0, canvasClick.width, canvasClick.height);
-  cxt.drawImage(event.target, 0, 0, canvasClick.width, canvasClick.height);
-  event.target.style.opacity = 0;
-  // if VIDEO mode is initialized, set runningMode to IMAGE
-  if (runningMode === "VIDEO") {
-    runningMode = "IMAGE";
-    await imageSegmenter.setOptions({
-      runningMode: runningMode
-    });
-  }
-
-  // imageSegmenter.segment() when resolved will call the callback function.
-  imageSegmenter.segment(event.target, callback);
-}
-
-function callback(result) {
-  const cxt = canvasClick.getContext("2d");
-  const { width, height } = result.categoryMask;
-  let imageData = cxt.getImageData(0, 0, width, height).data;
-  canvasClick.width = width;
-  canvasClick.height = height;
-  let category
-  const mask = result.categoryMask.getAsUint8Array();
-  for (let i in mask) {
-    if (mask[i] > 0) {
-      category = labels[mask[i]];
-    }
-    const legendColor = legendColors[mask[i] % legendColors.length];
-    imageData[i * 4] = (legendColor[0] + imageData[i * 4]) / 2;
-    imageData[i * 4 + 1] = (legendColor[1] + imageData[i * 4 + 1]) / 2;
-    imageData[i * 4 + 2] = (legendColor[2] + imageData[i * 4 + 2]) / 2;
-    imageData[i * 4 + 3] = (legendColor[3] + imageData[i * 4 + 3]) / 2;
-  }
-  const uint8Array = new Uint8ClampedArray(imageData.buffer);
-  const dataNew = new ImageData(uint8Array, width, height);
-  cxt.putImageData(dataNew, 0, 0);
-  const p = event.target.parentNode.getElementsByClassName(
-    "classification"
-  )[0];
-  p.classList.remove("removed");
-  p.innerText = "Category: " + category;
-}
-
-function callbackForVideo(result) {
+async function callbackForVideo(result) {
   let imageData = canvasCtx.getImageData(
     0,
     0,
     video.videoWidth,
     video.videoHeight
   ).data;
+  // 分割后的掩码
   const mask = result.categoryMask.getAsFloat32Array();
+  // const mask = result.confidenceMasks[0].getAsFloat32Array();
   let j = 0;
+  // 针对掩码做一个像素混合
   for (let i = 0; i < mask.length; ++i) {
-    const maskVal = Math.round(mask[i] * 255.0);
-    const legendColor = legendColors[maskVal % legendColors.length];
-    imageData[j] = (legendColor[0] + imageData[j]) / 2;
-    imageData[j + 1] = (legendColor[1] + imageData[j + 1]) / 2;
-    imageData[j + 2] = (legendColor[2] + imageData[j + 2]) / 2;
-    imageData[j + 3] = (legendColor[3] + imageData[j + 3]) / 2;
+    const maskVal = mask[i] // Math.round(mask[i] * 255.0);
+    // 需要混合的颜色
+    const legendColor = legendColors
+    //const legendColor = legendColors[maskVal % legendColors.length];
+    // for (let i = 0; i < mask.length; ++i) {
+  //   const maskVal = Math.round(mask[i] * 255.0);
+  //   const legendColor = legendColors[maskVal % legendColors.length];
+  //   imageData[j] = (legendColor[0] + imageData[j]) / 2;
+  //   imageData[j + 1] = (legendColor[1] + imageData[j + 1]) / 2;
+  //   imageData[j + 2] = (legendColor[2] + imageData[j + 2]) / 2;
+  //   imageData[j + 3] = (legendColor[3] + imageData[j + 3]) / 2;
+  //   j += 4;
+  // }
+    if(maskVal === 1) {
+      imageData[j] = legendColor[j]
+      imageData[j + 1] = legendColor[j + 1]
+      imageData[j + 2] = legendColor[j + 2]
+      imageData[j + 3] = Math.round(maskVal * 255.0);
+    }
     j += 4;
   }
   const uint8Array = new Uint8ClampedArray(imageData.buffer);
@@ -171,22 +137,18 @@ function callbackForVideo(result) {
     video.videoWidth,
     video.videoHeight
   );
-  canvasCtx.putImageData(dataNew, 0, 0);
+  canvasCtx1.putImageData(dataNew, 0, 0);
+
   if (webcamRunning === true) {
     window.requestAnimationFrame(predictWebcam);
   }
 }
 
-/********************************************************************
-// Demo 2: Continuously grab image from webcam stream and segmented it.
-********************************************************************/
 
-// Check if webcam access is supported.
 function hasGetUserMedia() {
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 }
 
-// Get segmentation from the webcam
 let lastWebcamTime = -1;
 async function predictWebcam() {
   if (video.currentTime === lastWebcamTime) {
@@ -196,26 +158,21 @@ async function predictWebcam() {
     return;
   }
   lastWebcamTime = video.currentTime;
+
   canvasCtx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-  // Do not segmented if imageSegmenter hasn't loaded
+
   if (imageSegmenter === undefined) {
     return;
   }
-  // if image mode is initialized, create a new segmented with video runningMode
-  if (runningMode === "IMAGE") {
-    runningMode = "VIDEO";
-    await imageSegmenter.setOptions({
-      runningMode: runningMode
-    });
-  }
+
   let startTimeMs = performance.now();
 
-  // Start segmenting the stream.
+
   imageSegmenter.segmentForVideo(video, startTimeMs, callbackForVideo);
 
 }
 
-// Enable the live webcam view and start imageSegmentation.
+
 async function enableCam(event) {
   if (imageSegmenter === undefined) {
     return;
@@ -223,25 +180,23 @@ async function enableCam(event) {
 
   if (webcamRunning === true) {
     webcamRunning = false;
-    enableWebcamButton.innerText = "ENABLE SEGMENTATION";
+    enableWebcamButton.innerText = "开启";
   } else {
     webcamRunning = true;
-    enableWebcamButton.innerText = "DISABLE SEGMENTATION";
+    enableWebcamButton.innerText = "关闭";
   }
 
-  // getUsermedia parameters.
   const constraints = {
     video: true,
     // audio: true
   };
 
-  // Activate the webcam stream.
   video.srcObject = await navigator.mediaDevices.getUserMedia(constraints);
   
   video.addEventListener("loadeddata", predictWebcam);
 }
 
-// If webcam supported, add event listener to button.
+
 if (hasGetUserMedia()) {
   enableWebcamButton = document.getElementById(
     "webcamButton"

@@ -6,6 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
   <style lang="less" scoped>
+    .hide {
+      display: none!important;
+    }
+    .active {
+      background-color: #efefef!important;
+    }
     body {
       margin: 0 auto;
       width: 100%;
@@ -13,8 +19,10 @@
       overflow: auto;
     }
     .container {
-      position: relative;
-      margin-top: 60px;
+      display: flex;
+      width: 1000px;
+      margin: 20px auto;
+      border: 1px solid #999;
     }
     #loading {
       display: none;
@@ -27,181 +35,371 @@
       line-height: 240px;
       font-size: 60px;
     }
-    video {
+    .video-wrap {
+      position: relative;
       width: 640px;
-      max-width: 100%;
-      object-fit: contain;
+      height: 480px;
+      background-color: #000;
     }
-    #video-tool {
+    #start {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      top: 220px;
+      left: 300px;
+      cursor: pointer;
+    }
+    .video-wrap video {
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transform: scaleX(-1);
+    }
+    .feature-list {
+      padding: 10px;
+      border-left: 1px solid #999;
+      border-right: 1px solid #999;
+    }
+    .case-list {
+      width: 300px;
+      padding: 10px;
+    }
+    .bg-list, .beauty-list {
       display: flex;
     }
-    .bg-list {
-      display: inline-flex;
-    }
-    .bg {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
+    .case-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
       cursor: pointer;
-      margin-right: 20px;
     }
-    #demo {
-      display: none;
+    .case-btn:hover {
+      background-color: #efefef;
+    }
+    .case-btn .label {
+      width: 30px;
+      height: 30px;
+      border-radius: 40px;
+    }
+    .case-btn .text {
+      font-size: 12px;
+      color: #666;
+    }
+    .title {
+      margin-top: 50px;
+      text-align: center;
     }
     </style>
 </head>
 <body>
-  <button id="start" type="btn">开始</button>
-  <button  type="btn" onclick="activeEffect = 'mask'">替换人像</button>
-  <button  type="btn" onclick="activeEffect = 'environment'">替换背景</button>
+  <h1 class="title">智能中心视频体验</h1>
   <div class="container">
-    <video id="video" autoplay controls></video>
-    <div id="loading">加载中</div>
-    <canvas id="demo"></canvas>
+    <div class="video-wrap">
+      <video id="video" autoplay controls></video>
+      <img id="start" src="./assets/播放.svg" alt="">
+      <canvas id="demo" width="640" height="480"></canvas>
+    </div>
+    <div class="feature-list">
+      <div class="case-btn feature-btn active" data-tar='.bg-list'>
+        <img class="label" src="./assets/换背景.svg" alt="">
+        <span class="text">背景</span>
+      </div>
+      <div class="case-btn feature-btn" data-tar='.beauty-list'>
+        <img class="label" src="./assets/美颜.svg" alt="">
+        <span class="text">美颜</span>
+      </div>
+    </div>
+    <div class="case-list">
+      <div class="case-item bg-list">
+        <div class="case-btn bg-btn no-bg active">
+          <img class="label" src="./assets/无.svg" />
+          <span class="text">无</span>
+        </div>
+        <div class="case-btn bg-btn blur-bg">
+          <img class="label" src="./bgImgs/虚化.jpg"/>
+          <span class="text">虚化</span>
+        </div>
+        <div class="case-btn bg-btn">
+          <img id="init" class="label"  src="./bgImgs/书房.jpg"/>
+          <span class="text">书房</span>
+        </div>
+        <div class="case-btn bg-btn">
+          <img class="label" src="./bgImgs/户外.jpg"/>
+          <span class="text">户外</span>
+        </div>
+        <div class="case-btn bg-btn">
+          <img class="label" src="./bgImgs/黄昏.jpg"/>
+          <span class="text">黄昏</span>
+        </div>
+      </div>
+      <div class="case-item beauty-list hide">
+        <div class="case-btn beauty-btn">
+          <img class="label" src="./assets/无.svg"/>
+          <span class="text">无</span>
+        </div>
+        <div class="case-btn beauty-btn">
+          <img class="label" src="./assets/瘦脸.svg"/>
+          <span class="text">瘦脸</span>
+        </div>·
+        <div class="case-btn beauty-btn">
+          <img class="label" src="./assets/眼睛.svg"/>
+          <span class="text">大眼</span>
+        </div>
+        <div class="case-btn beauty-btn">
+          <img class="label" src="./assets/嘴唇.svg"/>
+          <span class="text">口红</span>
+        </div>
+        <div class="case-btn beauty-btn">
+          <img class="label" src="./assets/磨皮.svg"/>
+          <span class="text">磨皮</span>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="bg-list">
-    <div class="bg" onclick="changeBg(null)" style="line-height: 80px;background-color: #000;text-align: center;color: #fff;"  id="bg0">无背景</div>
-    <img class="bg" onclick="changeBg(this)" id="bg1" src="./bgImgs/bg1.png"/>
-    <img class="bg" onclick="changeBg(this)"id="bg2" src="./bgImgs/bg2.jpg"/>
-    <img class="bg" onclick="changeBg(this)"id="bg3" src="./bgImgs/bg3.jpg"/>
-    <img class="bg" onclick="changeBg(this)"id="bg4" src="./bgImgs/bg4.jpg"/>
-  </div>
+  <canvas id="demo1" width="640" height="480"></canvas>
+
+
+<script type="module">
+  import vision from "/VideohumanSeg/seg/assets/vision_bundle.mjs";
+  const { ImageSegmenter, SegmentationMask, FilesetResolver } = vision;
+
+  const video = document.getElementById('video')
+  const canvas = document.getElementById('demo')
+  const startBtn = document.getElementById('start')
+  const canvasCtx = canvas.getContext('2d') // willReadFrequently
+  let webcamRunning = false
+  let runningMode = "VIDEO"; // "IMAGE" | "VIDEO" 
+  let imageSegmenter, legendColors, blur = false;
+  const width = 640
+  const height = 480
+
+  const createImageSegmenter = async () => {
+    const audio = await FilesetResolver.forVisionTasks(
+      "/VideohumanSeg/seg/assets/wasm"
+    );
+
+    imageSegmenter = await ImageSegmenter.createFromOptions(audio, {
+      baseOptions: {
+        modelAssetPath:
+          "/VideohumanSeg/seg/models/selfie_segmenter.tflite",
+        delegate: "GPU"
+      },
+      runningMode: runningMode,
+      outputCategoryMask: true,
+      outputConfidenceMasks: false
+    });
+
+    // 加载opencv
+    const script = document.createElement('script')
+    script.src = '/VideohumanSeg/seg/assets/opencv.js'
+    document.body.appendChild(script)
+  };
+  createImageSegmenter();
+
+  document.querySelectorAll('.feature-btn').forEach(item => {
+
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.feature-btn').forEach(i => {
+        i.classList.remove('active')
+      })
+      
+      item.classList.add('active')
+      document.querySelectorAll('.case-item').forEach(i => {
+        i.classList.add('hide')
+      })
+      const className = item.getAttribute('data-tar')
+      document.querySelector(className).classList.remove('hide')
+    })
+  })
   
-  
-  <!-- 加载sdk -->
-  <script src="/VideohumanSeg/selfie_segmentation/selfie_segmentation.js"></script>
-  
-<script>
-var bgImg
-var activeEffect = 'environment'
 
-function hasGetUserMedia() {
-  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-}
+  function hasGetUserMedia() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
 
-
-const video = document.getElementById('video')
-const canvas1 = document.getElementById('demo')
-const startBtn = document.getElementById('start')
-const loading = document.getElementById('loading')
-
-const videoCanvas = document.createElement('canvas')
-const videoCanvasCtx = videoCanvas.getContext('2d')
-
-function changeBg(img) {
-  bgImg = img
-}
-
-  const selfieSegmentation = new SelfieSegmentation({
-    locateFile: (file) => {
-      return `/VideohumanSeg/selfie_segmentation/${file}`
-    },
+  //===================背景功能=======================//
+  document.querySelectorAll('.bg-btn').forEach(item => {
+    
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.bg-btn').forEach(i => {
+        i.classList.remove('active')
+      })
+      
+      item.classList.add('active')
+      if(item.classList.value.includes('no-bg')) {
+        legendColors = blur = null
+      } else if(item.classList.value.includes('blur-bg')) {
+        console.log('虚化')
+        blur = true
+        legendColors = null
+      } else {
+        const img = item.querySelector('.label')
+        const videoCanvas = document.createElement('canvas')
+        const videoCanvasCtx = videoCanvas.getContext('2d')
+        videoCanvas.width = width
+        videoCanvas.height = height
+        videoCanvasCtx.drawImage(img, 0, 0, img.naturalWidth,
+          img.naturalHeight,
+          0,
+          0,
+          width, 
+          height)
+        legendColors = videoCanvasCtx.getImageData(
+          0,
+          0,
+          width,
+          height 
+        ).data;
+      }
+    })
   })
 
-  selfieSegmentation.setOptions({
-    selfieMode: true,
-    modelSelection: 0,
-    effect: 'mask',
-  })
 
-  // 点击视频控制按钮，实现视频播放/截图/暂停功能
+
+// 开始播放
   startBtn.addEventListener('click', async function (e) {
+  // 请求摄像头权限
     if (!hasGetUserMedia()) {
       alert("getUserMedia() is not supported by your browser");
       return
     }
+    this.style.display = 'none'
+    webcamRunning = true
 
-    loading.style.display = 'block'
-    // 请求摄像头权限
-    const stream = await navigator.mediaDevices.getUserMedia(
-      { audio: true, video: true }
-    )
-    let [videoTrack] = stream.getVideoTracks()
-    let [audioTrack] = stream.getAudioTracks()
-    const segmentGenerator = new MediaStreamTrackGenerator({
-      kind: 'video',
-    })
-    const processor = new MediaStreamTrackProcessor({ track: videoTrack })
-    const segmentStream = new MediaStream([audioTrack, segmentGenerator ]) // segmentGenerator
-    console.log(videoTrack)
-    video.srcObject = segmentStream
+    const constraints = {
+      video: true,
+      // audio: true
+    };
 
-    processor.readable
-      .pipeThrough(
-        new TransformStream({
-          transform: (frame, controller) => step(frame, controller),
-        }),
-      )
-      .pipeTo(segmentGenerator.writable)
-      .catch((err) => console.error('green screen generator error', err))
+    video.srcObject = await navigator.mediaDevices.getUserMedia(constraints);
+  
+    video.addEventListener("loadeddata", predictWebcam);
   })
 
-  async function step(frame, controller) {
-      const width = frame.codedWidth
-      const height = frame.codedHeight
-      videoCanvas.width = width
-      videoCanvas.height = height
-      videoCanvasCtx.drawImage(frame, 0, 0, width, height)
-    
 
-      await selfieSegmentation.onResults(async (results) => {
-        videoCanvasCtx.save()
-        videoCanvasCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height)
-        videoCanvasCtx.drawImage(
-          results.segmentationMask,
-          0,
-          0,
-          videoCanvas.width,
-          videoCanvas.height,
-        )
-        if(bgImg) {
-          // Only overwrite existing pixels.
-          if (activeEffect === 'mask' || activeEffect === 'both') {
-            videoCanvasCtx.globalCompositeOperation = 'source-in'
-            // This can be a color or a texture or whatever...
-            // videoCanvasCtx.fillStyle = '#00FF00'
-            // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
-            videoCanvasCtx.drawImage(
-              bgImg,
-              0,
-              0,
-              videoCanvas.width,
-              videoCanvas.height,
-            )
-          } else {
-            videoCanvasCtx.globalCompositeOperation = 'source-out'
-            // videoCanvasCtx.fillStyle = '#0000FF'
-            // videoCanvasCtx.fillRect(0, 0, videoCanvas.width, videoCanvas.height)
-            videoCanvasCtx.drawImage(
-              bgImg,
-              0,
-              0,
-              videoCanvas.width,
-              videoCanvas.height,
-            )
-          }
-        }
-        // Only overwrite missing pixels.
-        videoCanvasCtx.globalCompositeOperation = 'destination-atop'
-        videoCanvasCtx.drawImage(
-          results.image,
-          0,
-          0,
-          videoCanvas.width,
-          videoCanvas.height,
-        )
+  let lastWebcamTime = -1;
+  async function predictWebcam() {
+    if (video.currentTime === lastWebcamTime) {
+      if (webcamRunning === true) {
+        window.requestAnimationFrame(predictWebcam);
+      }
+      return;
+    }
+    lastWebcamTime = video.currentTime;
+    canvas
+    if (imageSegmenter === undefined) {
+      return;
+    }
+    canvasCtx.save();
+    canvasCtx.clearRect(0, 0, width, height);
+    canvasCtx.drawImage(
+        video,
+        0,
+        0,
+        width,
+        height,
+      )
+    let startTimeMs = performance.now();
 
-        // videoCanvasCtx.restore()
-        const selfieFrame = new VideoFrame(bgImg ? videoCanvas : results.image, { timestamp: 1 })
-        controller.enqueue(selfieFrame)
-        frame.close()
-        loading.style.display = 'none'
-      })
-      await selfieSegmentation.send({ image: videoCanvas })
+    imageSegmenter.segmentForVideo(video, startTimeMs, callbackForVideo);
+
   }
 
+  async function callbackForVideo(result) {
+    // 为了用虚化，直接把掩码做成蒙层蒙层
+    if(legendColors) {
+      let imageData = canvasCtx.getImageData(
+        0,
+        0,
+        width,
+        height
+      ).data;
+      
+      // 分割后的掩码
+      const mask = result.categoryMask.getAsFloat32Array();
+      let j = 0;
+      // 针对掩码做一个像素混合
+      for (let i = 0; i < mask.length; ++i) {
+        const maskVal = mask[i]
+        // 需要混合的颜色
+        const legendColor = legendColors
+        if(maskVal === 1) {
+          imageData[j] = legendColor[j]
+          imageData[j + 1] = legendColor[j + 1]
+          imageData[j + 2] = legendColor[j + 2]
+          imageData[j + 3] = Math.round(maskVal * 255.0);
+        }
+        j += 4;
+      }
+      const uint8Array = new Uint8ClampedArray(imageData.buffer);
+      const dataNew = new ImageData(
+        uint8Array,
+        width,
+        height
+      );
+      canvasCtx.putImageData(dataNew, 0, 0);
+    } else if(blur) {
+      let imageData = canvasCtx.getImageData(
+        0,
+        0,
+        width,
+        height
+      ).data;
+      // 分割后的掩码
+      const mask = result.categoryMask.getAsFloat32Array();
+      let j = 0;
+      // 针对掩码做一个像素混合
+      for (let i = 0; i < mask.length; ++i) {
+        const maskVal = mask[i]
+        imageData[j] = imageData[j]
+        imageData[j + 1] = imageData[j + 1]
+        imageData[j + 2] = imageData[j + 2]
+        imageData[j + 3] = Math.round(maskVal?0:1 * 255.0);
+        j += 4;
+      }
+      const uint8Array = new Uint8ClampedArray(imageData.buffer);
+      const dataNew = new ImageData(
+        uint8Array,
+        width,
+        height
+      );
+      
+      canvasCtx.putImageData(dataNew, 0, 0);
+      // let src = cv.imread('demo');
+      // let dst = new cv.Mat();
+      // cv.cvtColor(src, src, cv.COLOR_RGBA2RGB, 0);
+      // // You can try more different parameters
+      // cv.bilateralFilter(src, dst, 9, 75, 75, cv.BORDER_DEFAULT);
+      // cv.imshow('demo', dst);
+      // src.delete(); dst.delete();
 
+      canvasCtx.globalCompositeOperation = 'destination-atop';
+      canvasCtx.filter = "blur(6px)"
+      canvasCtx.drawImage(
+          video, 0, 0, width, height);
+      canvasCtx.restore();
+    }
 
+    if (webcamRunning === true) {
+      window.requestAnimationFrame(predictWebcam);
+    }
+  }
+
+  //===================美颜功能=======================//
+  document.querySelectorAll('.beauty-btn').forEach(item => {
+    
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.beauty-btn').forEach(i => {
+        i.classList.remove('active')
+      })
+      
+      item.classList.add('active')
+      alert('太难了，抓耳挠腮开发中，头发都要掉光了')
+    })
+  })
 </script>
 </body>
 </html>

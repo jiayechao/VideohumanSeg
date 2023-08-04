@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style lang="less" scoped>
+    .hide {
+      display: none!important;
+    }
+    .active {
+      background-color: #efefef!important;
+    }
+    body {
+      margin: 0 auto;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+    .container {
+      display: flex;
+      width: 1000px;
+      margin: 20px auto;
+      border: 1px solid #999;
+    }
+    #loading {
+      display: none;
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      top: 0;
+      width: 640px;
+      text-align: center;
+      line-height: 240px;
+      font-size: 60px;
+    }
+    .video-wrap {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      background-color: #000;
+    }
+    #start {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      top: 220px;
+      left: 300px;
+      cursor: pointer;
+    }
+    .video-wrap video {
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transform: scaleX(-1);
+    }
+    .feature-list {
+      padding: 10px;
+      border-left: 1px solid #999;
+      border-right: 1px solid #999;
+    }
+    .case-list {
+      width: 300px;
+      padding: 10px;
+    }
+    .bg-list, .beauty-list {
+      display: flex;
+    }
+    .case-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      cursor: pointer;
+    }
+    .case-btn:hover {
+      background-color: #efefef;
+    }
+    .case-btn .label {
+      width: 30px;
+      height: 30px;
+      border-radius: 40px;
+    }
+    .case-btn .text {
+      font-size: 12px;
+      color: #666;
+    }
+    .title {
+      margin-top: 50px;
+      text-align: center;
+    }
+    </style>
+</head>
+<body>
+  <h1 class="title">智能中心视频体验</h1>
+  <div class="container">
+    <div class="video-wrap">
+      <video id="video" autoplay controls></video>
+      <img id="start" src="./assets/播放.svg" alt="">
+      <canvas id="demo" width="640" height="480"></canvas>
+    </div>
+    <div class="feature-list">
+      <div class="case-btn active" onclick="showCase('.bg-list')">
+        <img class="label" src="./assets/换背景.svg" alt="">
+        <span class="text">背景</span>
+      </div>
+      <div class="case-btn" onclick="showCase('.bg-list')">
+        <img class="label" src="./assets/美颜.svg" alt="">
+        <span class="text">美颜</span>
+      </div>
+    </div>
+    <div class="case-list">
+      <div class="bg-list">
+        <div class="case-btn bg-btn" onclick="changeBg(undefined)">
+          <img class="label" src="./assets/无.svg" />
+          <span class="text">无</span>
+        </div>
+        <div class="case-btn bg-btn" onclick="changeBg(undefined)">
+          <img class="label" src="./bgImgs/虚化.jpg"/>
+          <span class="text">虚化</span>
+        </div>
+        <div class="case-btn bg-btn" onclick="changeBg(this.querySelector('.label'))">
+          <img id="init" class="label"  src="./bgImgs/书房.jpg"/>
+          <span class="text">书房</span>
+        </div>
+        <div class="case-btn bg-btn" onclick="changeBg(this.querySelector('.label'))">
+          <img class="label" src="./bgImgs/户外.jpg"/>
+          <span class="text">户外</span>
+        </div>
+        <div class="case-btn bg-btn" onclick="changeBg(this.querySelector('.label'))">
+          <img class="label" src="./bgImgs/黄昏.jpg"/>
+          <span class="text">黄昏</span>
+        </div>
+      </div>
+      <div class="beauty-list hide">
+        <div class="case-btn">
+          <img class="label" src="./assets/无.svg"/>
+          <span class="text">无</span>
+        </div>
+        <div class="case-btn">
+          <img class="label" src="./assets/瘦脸.svg"/>
+          <span class="text">瘦脸</span>
+        </div>
+        <div class="case-btn">
+          <img class="label" src="./assets/磨皮.svg"/>
+          <span class="text">磨皮</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- 加载sdk -->
+<script src="/selfie_segmentation/camera.js"></script>
+<script src="/selfie_segmentation/selfie_segmentation.js"></script>
+
+<script>
+const video = document.getElementById('video')
+const canvas = document.getElementById('demo')
+const startBtn = document.getElementById('start')
+const videoCanvasCtx = canvas.getContext('2d')
+
+const width = 640
+const height = 480
+// var bgImg = document.getElementById('init')
+var bgImg
+
+function hasGetUserMedia() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+
+//===================背景功能=======================//
+
+function changeBg(img) {
+  bgImg = img
+}
+
+
+var activeEffect = 'environment'
+const selfieSegmentation = new SelfieSegmentation({
+  locateFile: (file) => {
+    return `/selfie_segmentation/${file}`
+  },
+})
+
+selfieSegmentation.setOptions({
+  selfieMode: false,
+  modelSelection: 0,
+})
+
+// 开始播放
+startBtn.addEventListener('click', async function (e) {
+  // 请求摄像头权限
+  if (!hasGetUserMedia()) {
+      alert("getUserMedia() is not supported by your browser");
+      return
+    }
+    this.style.display = 'none'
+    
+    video.srcObject = await navigator.mediaDevices.getUserMedia(
+      {video: true }
+    )
+    video.addEventListener("loadeddata", step);
+    
+  })
+  async function step() {
+    if(bgImg) {
+        
+      
+      selfieSegmentation.onResults(async (results) => {
+        videoCanvasCtx.save();
+        videoCanvasCtx.clearRect(0, 0, width, height);
+        // 设置源图像
+        videoCanvasCtx.drawImage(
+          results.segmentationMask, // 分割蒙层
+          0,
+          0,
+          width,
+          height,
+        )
+
+        // 如果是替换人，需要新图形在重叠地方（人像）绘制，其他地方透明
+        if (activeEffect === 'mask' || activeEffect === 'both') {
+          videoCanvasCtx.globalCompositeOperation = 'source-in'
+          videoCanvasCtx.drawImage(
+            bgImg,
+            0,
+            0,
+            width,
+            height,
+          )
+        } else {
+          // 如果是替换背景，需要新图形在不重叠地方（背景）绘制，其他地方透明（显示出人像部分）
+          videoCanvasCtx.globalCompositeOperation = 'source-out'
+          videoCanvasCtx.drawImage(
+            bgImg,
+            0,
+            0,
+            width,
+            height,
+          )
+        }
+        // 补充透明部分，即在画布后面绘制，从而补充透明部分
+        videoCanvasCtx.globalCompositeOperation = 'destination-atop'
+        videoCanvasCtx.drawImage(
+          results.image,
+          0,
+          0,
+          width,
+          height,
+        )
+      })
+
+      await selfieSegmentation.send({ image: video })
+
+    } else {
+      videoCanvasCtx.drawImage(
+          video,
+          0,
+          0,
+          width,
+          height,
+        )
+    }
+    window.requestAnimationFrame(step);
+  }
+  
+
+//===================美颜功能=======================//
+
+</script>
+</body>
+</html>
