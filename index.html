@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- git push -f git@github.com:jiayechao/VideohumanSeg.git master:gh-pages -->
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -65,8 +66,9 @@
       width: 300px;
       padding: 10px;
     }
-    .bg-list, .beauty-list {
+    .bg-list, .beauty-list, .filter-list {
       display: flex;
+      flex-wrap: wrap;
     }
     .case-btn {
       display: flex;
@@ -110,6 +112,10 @@
       <div class="case-btn feature-btn" data-tar='.beauty-list'>
         <img class="label" src="./assets/美颜.svg" alt="">
         <span class="text">美颜</span>
+      </div>
+      <div class="case-btn feature-btn" data-tar='.filter-list'>
+        <img class="label" src="./assets/照片.svg"/>
+        <span class="text">滤镜</span>
       </div>
     </div>
     <div class="case-list">
@@ -157,6 +163,40 @@
           <span class="text">磨皮</span>
         </div>
       </div>
+      <div class="case-item filter-list hide">
+        <div class="case-btn filter-btn" data-type="0">
+          <img class="label" src="./assets/无.svg"/>
+          <span class="text">无</span>
+        </div>
+        <div class="case-btn filter-btn" data-type="oldImg">
+          <img class="label" src="./assets/照片.svg"/>
+          <span class="text">老照片</span>
+        </div>
+        <div class="case-btn filter-btn" data-type="blackImg">
+          <img class="label" src="./assets/照片.svg"/>
+          <span class="text">黑白</span>
+        </div>
+        <div class="case-btn filter-btn" data-type="darkImg">
+          <img class="label" src="./assets/照片.svg"/>
+          <span class="text">灰暗</span>
+        </div>
+        <div class="case-btn filter-btn" data-type="lightImg">
+          <img class="label" src="./assets/照片.svg"/>
+          <span class="text">明亮</span>
+        </div>
+        <div class="case-btn filter-btn" data-type="redImg">
+          <img class="label" src="./assets/照片.svg"/>
+          <span class="text">红色</span>
+        </div>
+        <div class="case-btn filter-btn" data-type="blueImg">
+          <img class="label" src="./assets/照片.svg"/>
+          <span class="text">蓝色</span>
+        </div>
+        <div class="case-btn filter-btn" data-type="greenImg">
+          <img class="label" src="./assets/照片.svg"/>
+          <span class="text">绿色</span>
+        </div>
+      </div>
     </div>
   </div>
   <canvas id="demo1" width="640" height="480"></canvas>
@@ -172,7 +212,7 @@
   const canvasCtx = canvas.getContext('2d') // willReadFrequently
   let webcamRunning = false
   let runningMode = "VIDEO"; // "IMAGE" | "VIDEO" 
-  let imageSegmenter, legendColors, blur = false;
+  let imageSegmenter, legendColors, blur = false, filter = null;
   const width = 640
   const height = 480
 
@@ -368,19 +408,24 @@
       );
       
       canvasCtx.putImageData(dataNew, 0, 0);
-      // let src = cv.imread('demo');
-      // let dst = new cv.Mat();
-      // cv.cvtColor(src, src, cv.COLOR_RGBA2RGB, 0);
-      // // You can try more different parameters
-      // cv.bilateralFilter(src, dst, 9, 75, 75, cv.BORDER_DEFAULT);
-      // cv.imshow('demo', dst);
-      // src.delete(); dst.delete();
 
       canvasCtx.globalCompositeOperation = 'destination-atop';
       canvasCtx.filter = "blur(6px)"
       canvasCtx.drawImage(
           video, 0, 0, width, height);
       canvasCtx.restore();
+    }
+
+    // 滤镜处理
+    if(filter && filter != 0) {
+      canvasCtx.putImageData(
+        eval(filter)( canvasCtx.getImageData(
+          0,
+          0,
+          width,
+          height
+        )), 0, 0
+      )
     }
 
     if (webcamRunning === true) {
@@ -400,6 +445,94 @@
       alert('太难了，抓耳挠腮开发中，头发都要掉光了')
     })
   })
+
+  //===================滤镜功能=======================//
+  document.querySelectorAll('.filter-btn').forEach(item => {
+    
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn').forEach(i => {
+        i.classList.remove('active')
+      })
+      
+      item.classList.add('active')
+      filter = item.getAttribute('data-type')
+    })
+  })
+  function blackImg(imageData) {
+    const data = imageData.data
+    for (var i = 0; i < data.length; i += 4) {
+      const r = data[i + 0]
+      const g = data[i + 1]
+      const b = data[i + 2]
+      const avg = (r + g + b) / 3
+      data[i + 0] = data[i + 1] = data[i + 2] = avg >= 128 ? 255 : 0
+    }
+    return imageData
+  }
+
+  function lightImg(imageData) {
+    const data = imageData.data
+    let luminance = 60 // 调节参数
+    for (var i = 0; i < data.length; i += 4) {
+      data[i + 0] += luminance // r，红通道
+      data[i + 1] += luminance // g，绿通道\
+      data[i + 2] += luminance // b，蓝通道
+    }
+    return imageData
+  }
+
+  function darkImg(imageData) {
+    const data = imageData.data
+    let luminance = 60 // 调节参数
+    for (var i = 0; i < data.length; i += 4) {
+      data[i + 0] -= luminance // r，红通道
+      data[i + 1] -= luminance // g，绿通道\
+      data[i + 2] -= luminance // b，蓝通道
+    }
+    return imageData
+  }
+
+  function redImg(imageData) {
+    const data = imageData.data
+    let luminance = 80 // 调节参数
+    for (var i = 0; i < data.length; i += 4) {
+      data[i + 0] += luminance // r，红通道
+      // data[i + 1] -= luminance // g，绿通道\
+      // data[i + 2] -= luminance // b，蓝通道
+    }
+    return imageData
+  }
+  function greenImg(imageData) {
+    const data = imageData.data
+    let luminance = 80 // 调节参数
+    for (var i = 0; i < data.length; i += 4) {
+      data[i + 1] += luminance // g，绿通道\
+      // data[i + 2] -= luminance // b，蓝通道
+    }
+    return imageData
+  }
+  function blueImg(imageData) {
+    const data = imageData.data
+    let luminance = 80 // 调节参数
+    for (var i = 0; i < data.length; i += 4) {
+      data[i + 2] += luminance // b，蓝通道
+    }
+    return imageData
+  }
+
+  function oldImg(imageData) {
+    const data = imageData.data
+    for (var i = 0; i < data.length; i += 4) {
+      const r = data[i + 0]
+      const g = data[i + 1]
+      const b = data[i + 2]
+      data[i + 0] = r * 0.28 + g * 0.72 + b * 0.22
+      data[i + 1] = r * 0.25 + g * 0.63 + b * 0.13
+      data[i + 2] = r * 0.17 + g * 0.66 + b * 0.13
+    }
+    return imageData
+  }
+
 </script>
 </body>
 </html>
